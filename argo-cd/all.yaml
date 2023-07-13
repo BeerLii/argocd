@@ -17694,6 +17694,9 @@ spec:
           - name: HELM_DATA_HOME
             value: /helm-working-dir
         volumeMounts:
+        - mountPath: /usr/local/bin/jq
+          name: custom-tools
+          subPath: jq
         - mountPath: /app/config/ssh
           name: ssh-known-hosts
         - mountPath: /app/config/tls
@@ -17767,7 +17770,25 @@ spec:
         volumeMounts:
         - mountPath: /var/run/argocd
           name: var-files
+      - args:
+        - wget -O argocd-vault-plugin https://github.com/argoproj-labs/argocd-vault-plugin/releases/download/v${AVP_VERSION}/argocd-vault-plugin_${AVP_VERSION}_linux_amd64
+          && chmod +x argocd-vault-plugin && mv argocd-vault-plugin /custom-tools/ && wget
+          -O jq https://github.com/jqlang/jq/releases/download/jq-1.6/jq-linux64 && chmod
+          +x jq && mv jq /custom-tools/
+        command:
+        - sh
+        - -c
+        env:
+        - name: AVP_VERSION
+          value: 1.15.0
+        image: alpine:3.8
+        name: download-tools
+        volumeMounts:
+        - mountPath: /custom-tools
+          name: custom-tools
       volumes:
+      - emptyDir: {}
+        name: custom-tools
       - name: helm-working-dir
         emptyDir: {}
       - name: plugins
