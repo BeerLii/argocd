@@ -361,13 +361,21 @@ configs:
   # Ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/config-management-plugins/
   cmp:
     # -- Create the argocd-cmp-cm configmap
-    create: false
+    create: true
 
     # -- Annotations to be added to argocd-cmp-cm configmap
     annotations: {}
 
     # -- Plugin yaml files to be added to argocd-cmp-cm
-    plugins: {}
+    plugins:
+      kustomized-helm-param-multi-values:
+        generate:
+          command: [ "bash", "-c" ]
+          args: [ 'ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array | .[] | \"--values=\" + ." ) && echo $ARGUMENTS | xargs helm template --release-name release-name > all.yaml && kustomize build' ]
+      kustomized-helm-env-multi-values:
+        generate:
+          command: [ "bash", "-c" ]
+          args: [ 'ARG="" && for f in ${ARGOCD_ENV_VALUESFILE//,/ };do ARG="$ARG--values $f ";done && echo $ARG | xargs helm template --release-name release-name > all.yaml && kustomize build']
       # --- First plugin
       # my-plugin:
       #   init:
@@ -2163,7 +2171,7 @@ repoServer:
   # -- Additional volumes to the repo server pod
   volumes:
     - name: custom-tools
-      emptyDir: { }
+      emptyDir: {}
   #  - name: argocd-cmp-cm
   #    configMap:
   #      name: argocd-cmp-cm
