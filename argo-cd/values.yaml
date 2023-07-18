@@ -2096,7 +2096,7 @@ repoServer:
   ## Ref: https://argo-cd.readthedocs.io/en/stable/user-guide/config-management-plugins/
   ## Note: Supports use of custom Helm templates
   extraContainers:
-     - name: cmp-my-plugin
+     - name: kustomized-helm-param-multi-values
        command:
          - "/var/run/argocd/argocd-cmp-server"
        image: busybox
@@ -2109,32 +2109,33 @@ repoServer:
          - mountPath: /home/argocd/cmp-server/plugins
            name: plugins
          # Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
-         - mountPath: /home/argocd/cmp-server/config
+         - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+           subPath: kustomized-helm-param-multi-values.yaml
            name: argocd-cmp-cm
          # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps
          # mitigate path traversal attacks.
          - mountPath: /tmp
            name: cmp-tmp
-    # - name: cmp-my-plugin2
-    #   command:
-    #     - "/var/run/argocd/argocd-cmp-server"
-    #   image: busybox
-    #   securityContext:
-    #     runAsNonRoot: true
-    #     runAsUser: 999
-    #   volumeMounts:
-    #     - mountPath: /var/run/argocd
-    #       name: var-files
-    #     # Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
-    #     - mountPath: /home/argocd/cmp-server/plugins
-    #       name: plugins
-    #     - mountPath: /home/argocd/cmp-server/config/plugin.yaml
-    #       subPath: my-plugin2.yaml
-    #       name: argocd-cmp-cm
-    #     # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps
-    #     # mitigate path traversal attacks.
-    #     - mountPath: /tmp
-    #       name: cmp-tmp
+     - name: kustomized-helm-env-multi-values
+       command:
+         - "/var/run/argocd/argocd-cmp-server"
+       image: busybox
+       securityContext:
+         runAsNonRoot: true
+         runAsUser: 999
+       volumeMounts:
+         - mountPath: /var/run/argocd
+           name: var-files
+         # Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
+         - mountPath: /home/argocd/cmp-server/plugins
+           name: plugins
+         - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+           subPath: kustomized-helm-env-multi-values.yaml
+           name: argocd-cmp-cm
+         # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps
+         # mitigate path traversal attacks.
+         - mountPath: /tmp
+           name: cmp-tmp
 
   # -- Init containers to add to the repo server pods
   initContainers:
