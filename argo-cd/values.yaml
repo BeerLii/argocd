@@ -370,11 +370,11 @@ configs:
     plugins:
       kustomized-helm-param-multi-values:
         generate:
-          command: [ "bash", "-c" ]
+          command: [ "sh", "-c" ]
           args: [ 'ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array | .[] | \"--values=\" + ." ) && echo $ARGUMENTS | xargs helm template --release-name release-name > all.yaml && kustomize build' ]
       kustomized-helm-env-multi-values:
         generate:
-          command: [ "bash", "-c" ]
+          command: [ "sh", "-c" ]
           args: [ 'ARG="" && for f in ${ARGOCD_ENV_VALUESFILE//,/ };do ARG="$ARG--values $f ";done && echo $ARG | xargs helm template --release-name release-name > all.yaml && kustomize build']
       # --- First plugin
       # my-plugin:
@@ -2116,6 +2116,16 @@ repoServer:
          # mitigate path traversal attacks.
          - mountPath: /tmp
            name: cmp-tmp
+         - name: custom-tools
+           mountPath: /usr/bin/jq
+           subPath: jq
+         - name: custom-tools
+           mountPath: /usr/bin/helm
+           subPath: helm
+         - name: custom-tools
+           mountPath: /usr/bin/kustomize
+           subPath: kustomize
+
      - name: kustomized-helm-env-multi-values
        command:
          - "/var/run/argocd/argocd-cmp-server"
@@ -2136,6 +2146,15 @@ repoServer:
          # mitigate path traversal attacks.
          - mountPath: /tmp
            name: cmp-tmp
+         - name: custom-tools
+           mountPath: /usr/bin/jq
+           subPath: jq
+         - name: custom-tools
+           mountPath: /usr/bin/helm
+           subPath: helm
+         - name: custom-tools
+           mountPath: /usr/bin/kustomize
+           subPath: kustomize
 
   # -- Init containers to add to the repo server pods
   initContainers:
@@ -2156,7 +2175,11 @@ repoServer:
           mv argocd-vault-plugin /custom-tools/ &&
           wget -O jq https://github.com/jqlang/jq/releases/download/jq-1.6/jq-linux64 &&
           chmod +x jq &&
-          mv jq /custom-tools/
+          mv jq /custom-tools/ &&
+          wget https://get.helm.sh/helm-v3.12.2-linux-amd64.tar.gz &&
+          tar xf helm-v3.12.2-linux-amd64.tar.gz && chmod +x linux-amd64/helm && mv linux-amd64/helm /custom-tools/ &&
+          wget https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.0/kustomize_v5.1.0_linux_amd64.tar.gz &&
+          tar xf kustomize_v5.1.0_linux_amd64.tar.gz && chmod +x kustomize && mv kustomize /custom-tools/
 
       volumeMounts:
         - mountPath: /custom-tools
