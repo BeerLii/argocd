@@ -17793,6 +17793,23 @@ spec:
           runAsNonRoot: true
           seccompProfile:
             type: RuntimeDefault
+      - command:
+        - /var/run/argocd/argocd-cmp-server
+        image: busybox
+        name: cmp-my-plugin
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+        volumeMounts:
+        - mountPath: /var/run/argocd
+          name: var-files
+        - mountPath: /home/argocd/cmp-server/plugins
+          name: plugins
+        - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+          name: argocd-cmp-cm
+          subPath: kustomized-helm-param-multi-values.yaml
+        - mountPath: /tmp
+          name: cmp-tmp
       initContainers:
       - command:
         - /bin/cp
