@@ -186,6 +186,23 @@ configs:
     # -- Timeout to refresh application data as well as target manifests cache
     timeout.hard.reconciliation: 0s
 
+    configManagementPlugins: |
+      - name: kustomized-helm-param-multi-values
+        generate:
+          command: ["bash", "-c"]
+          args: ['ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array | .[] | \"--values=\" + ." ) && echo $ARGUMENTS | xargs helm template --release-name release-name > all.yaml && kustomize build']
+      - name: kustomized-helm-env-multi-values
+        generate:
+          command: ["bash", "-c"]
+          args: ['ARG="" && for f in ${ARGOCD_ENV_VALUESFILE//,/$\'\n\'};do ARG="$ARG--values $f ";done && echo $ARG | xargs helm template --release-name release-name > all.yaml && kustomize build']
+      - name: kustomized-helm
+        init:
+          command: ["/bin/sh", "-c"]
+          args: ["helm dependency build"]
+        generate:
+          command: [sh, -c]
+          args: ["helm template --release-name release-name . > all.yaml && kustomize build"]
+
     # Dex configuration
     # dex.config: |
     #   connectors:
@@ -367,15 +384,15 @@ configs:
     annotations: {}
 
     # -- Plugin yaml files to be added to argocd-cmp-cm
-    plugins:
-      kustomized-helm-param-multi-values:
-        generate:
-          command: [ "sh", "-c" ]
-          args: [ 'ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array | .[] | \"--values=\" + ." ) && echo $ARGUMENTS | xargs helm template --release-name release-name > all.yaml && kustomize build' ]
-      kustomized-helm-env-multi-values:
-        generate:
-          command: [ "sh", "-c" ]
-          args: [ 'ARG="" && for f in ${ARGOCD_ENV_VALUESFILE//,/ };do ARG="$ARG--values $f ";done && echo $ARG | xargs helm template --release-name release-name > all.yaml && kustomize build']
+    plugins: []
+#      kustomized-helm-param-multi-values:
+#        generate:
+#          command: [ "sh", "-c" ]
+#          args: [ 'ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array | .[] | \"--values=\" + ." ) && echo $ARGUMENTS | xargs helm template --release-name release-name > all.yaml && kustomize build' ]
+#      kustomized-helm-env-multi-values:
+#        generate:
+#          command: [ "sh", "-c" ]
+#          args: [ 'ARG="" && for f in ${ARGOCD_ENV_VALUESFILE//,/ };do ARG="$ARG--values $f ";done && echo $ARG | xargs helm template --release-name release-name > all.yaml && kustomize build']
       # --- First plugin
       # my-plugin:
       #   init:
@@ -2095,66 +2112,66 @@ repoServer:
   # -- Additional containers to be added to the repo server pod
   ## Ref: https://argo-cd.readthedocs.io/en/stable/user-guide/config-management-plugins/
   ## Note: Supports use of custom Helm templates
-  extraContainers:
-     - name: kustomized-helm-param-multi-values
-       command:
-         - "/var/run/argocd/argocd-cmp-server"
-       image: busybox
-       securityContext:
-         runAsNonRoot: true
-         runAsUser: 999
-       volumeMounts:
-         - mountPath: /var/run/argocd
-           name: var-files
-         - mountPath: /home/argocd/cmp-server/plugins
-           name: plugins
-         # Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
-         - mountPath: /home/argocd/cmp-server/config/plugin.yaml
-           subPath: kustomized-helm-param-multi-values.yaml
-           name: argocd-cmp-cm
-         # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps
-         # mitigate path traversal attacks.
-         - mountPath: /tmp
-           name: cmp-tmp
-         - name: custom-tools
-           mountPath: /usr/bin/jq
-           subPath: jq
-         - name: custom-tools
-           mountPath: /usr/bin/helm
-           subPath: helm
-         - name: custom-tools
-           mountPath: /usr/bin/kustomize
-           subPath: kustomize
-
-     - name: kustomized-helm-env-multi-values
-       command:
-         - "/var/run/argocd/argocd-cmp-server"
-       image: busybox
-       securityContext:
-         runAsNonRoot: true
-         runAsUser: 999
-       volumeMounts:
-         - mountPath: /var/run/argocd
-           name: var-files
-         # Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
-         - mountPath: /home/argocd/cmp-server/plugins
-           name: plugins
-         - mountPath: /home/argocd/cmp-server/config/plugin.yaml
-           subPath: kustomized-helm-env-multi-values.yaml
-           name: argocd-cmp-cm
-         # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps
-         # mitigate path traversal attacks.
-         - mountPath: /tmp
-           name: cmp-tmp
-         - name: custom-tools
-           mountPath: /usr/bin/jq
-           subPath: jq
-         - name: custom-tools
-           mountPath: /usr/bin/helm
-           subPath: helm
-         - name: custom-tools
-           mountPath: /usr/bin/kustomize
-           subPath: kustomize
+  extraContainers: []
+#     - name: kustomized-helm-param-multi-values
+#       command:
+#         - "/var/run/argocd/argocd-cmp-server"
+#       image: busybox
+#       securityContext:
+#         runAsNonRoot: true
+#         runAsUser: 999
+#       volumeMounts:
+#         - mountPath: /var/run/argocd
+#           name: var-files
+#         - mountPath: /home/argocd/cmp-server/plugins
+#           name: plugins
+#         # Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
+#         - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+#           subPath: kustomized-helm-param-multi-values.yaml
+#           name: argocd-cmp-cm
+#         # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps
+#         # mitigate path traversal attacks.
+#         - mountPath: /tmp
+#           name: cmp-tmp
+#         - name: custom-tools
+#           mountPath: /usr/bin/jq
+#           subPath: jq
+#         - name: custom-tools
+#           mountPath: /usr/bin/helm
+#           subPath: helm
+#         - name: custom-tools
+#           mountPath: /usr/bin/kustomize
+#           subPath: kustomize
+#
+#     - name: kustomized-helm-env-multi-values
+#       command:
+#         - "/var/run/argocd/argocd-cmp-server"
+#       image: busybox
+#       securityContext:
+#         runAsNonRoot: true
+#         runAsUser: 999
+#       volumeMounts:
+#         - mountPath: /var/run/argocd
+#           name: var-files
+#         # Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
+#         - mountPath: /home/argocd/cmp-server/plugins
+#           name: plugins
+#         - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+#           subPath: kustomized-helm-env-multi-values.yaml
+#           name: argocd-cmp-cm
+#         # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps
+#         # mitigate path traversal attacks.
+#         - mountPath: /tmp
+#           name: cmp-tmp
+#         - name: custom-tools
+#           mountPath: /usr/bin/jq
+#           subPath: jq
+#         - name: custom-tools
+#           mountPath: /usr/bin/helm
+#           subPath: helm
+#         - name: custom-tools
+#           mountPath: /usr/bin/kustomize
+#           subPath: kustomize
 
   # -- Init containers to add to the repo server pods
   initContainers:

@@ -145,6 +145,22 @@ metadata:
 data:
   admin.enabled: "true"
   application.instanceLabelKey: argocd.argoproj.io/instance
+  configManagementPlugins: |
+    - name: kustomized-helm-param-multi-values
+      generate:
+        command: ["bash", "-c"]
+        args: ['ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array | .[] | \"--values=\" + ." ) && echo $ARGUMENTS | xargs helm template --release-name release-name > all.yaml && kustomize build']
+    - name: kustomized-helm-env-multi-values
+      generate:
+        command: ["bash", "-c"]
+        args: ['ARG="" && for f in ${ARGOCD_ENV_VALUESFILE//,/$\'\n\'};do ARG="$ARG--values $f ";done && echo $ARG | xargs helm template --release-name release-name > all.yaml && kustomize build']
+    - name: kustomized-helm
+      init:
+        command: ["/bin/sh", "-c"]
+        args: ["helm dependency build"]
+      generate:
+        command: [sh, -c]
+        args: ["helm template --release-name release-name . > all.yaml && kustomize build"]
   exec.enabled: "false"
   server.rbac.log.enforce.enable: "false"
   timeout.hard.reconciliation: 0s
@@ -210,34 +226,6 @@ metadata:
     app.kubernetes.io/part-of: argocd
     app.kubernetes.io/version: v2.7.7
 data:
-  kustomized-helm-env-multi-values.yaml: |
-    apiVersion: argoproj.io/v1alpha1
-    kind: ConfigManagementPlugin
-    metadata:
-      name: kustomized-helm-env-multi-values
-    spec:
-      generate:
-        args:
-        - ARG="" && for f in ${ARGOCD_ENV_VALUESFILE//,/ };do ARG="$ARG--values $f ";done
-          && echo $ARG | xargs helm template --release-name release-name > all.yaml && kustomize
-          build
-        command:
-        - bash
-        - -c
-  kustomized-helm-param-multi-values.yaml: |
-    apiVersion: argoproj.io/v1alpha1
-    kind: ConfigManagementPlugin
-    metadata:
-      name: kustomized-helm-param-multi-values
-    spec:
-      generate:
-        args:
-        - ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array
-          | .[] | \"--values=\" + ." ) && echo $ARGUMENTS | xargs helm template --release-name
-          release-name > all.yaml && kustomize build
-        command:
-        - bash
-        - -c
 ---
 # Source: argo-cd/templates/argocd-configs/argocd-gpg-keys-cm.yaml
 apiVersion: v1
@@ -17793,23 +17781,6 @@ spec:
           runAsNonRoot: true
           seccompProfile:
             type: RuntimeDefault
-      - command:
-        - /var/run/argocd/argocd-cmp-server
-        image: busybox
-        name: cmp-my-plugin
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 999
-        volumeMounts:
-        - mountPath: /var/run/argocd
-          name: var-files
-        - mountPath: /home/argocd/cmp-server/plugins
-          name: plugins
-        - mountPath: /home/argocd/cmp-server/config/plugin.yaml
-          name: argocd-cmp-cm
-          subPath: kustomized-helm-param-multi-values.yaml
-        - mountPath: /tmp
-          name: cmp-tmp
       initContainers:
       - command:
         - /bin/cp
@@ -17835,7 +17806,11 @@ spec:
         - wget -O argocd-vault-plugin https://github.com/argoproj-labs/argocd-vault-plugin/releases/download/v${AVP_VERSION}/argocd-vault-plugin_${AVP_VERSION}_linux_amd64
           && chmod +x argocd-vault-plugin && mv argocd-vault-plugin /custom-tools/ && wget
           -O jq https://github.com/jqlang/jq/releases/download/jq-1.6/jq-linux64 && chmod
-          +x jq && mv jq /custom-tools/
+          +x jq && mv jq /custom-tools/ && wget https://get.helm.sh/helm-v3.12.2-linux-amd64.tar.gz
+          && tar xf helm-v3.12.2-linux-amd64.tar.gz && chmod +x linux-amd64/helm && mv linux-amd64/helm
+          /custom-tools/ && wget https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.0/kustomize_v5.1.0_linux_amd64.tar.gz
+          && tar xf kustomize_v5.1.0_linux_amd64.tar.gz && chmod +x kustomize && mv kustomize
+          /custom-tools/
         command:
         - sh
         - -c
@@ -17850,6 +17825,11 @@ spec:
       volumes:
       - emptyDir: {}
         name: custom-tools
+      - configMap:
+          name: argocd-cmp-cm
+        name: argocd-cmp-cm
+      - emptyDir: {}
+        name: cmp-tmp
       - name: helm-working-dir
         emptyDir: {}
       - name: plugins
