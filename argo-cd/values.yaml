@@ -190,7 +190,7 @@ configs:
       - name: kustomized-helm-param-multi-values
         generate:
           command: ["bash", "-c"]
-          args: ['ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array | .[] | \"--values=\" + ." ) && echo "$ARGOCD_APP_NAMESPACE" > /tmp/test.txt && echo $ARGUMENTS | xargs helm template --release-name $ARGOCD_APP_NAME  ./ -n $ARGOCD_APP_NAMESPACE  > all.yaml && kustomize build']
+          args: ['ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array | .[] | \"--values=\" + ." ) && echo "$ARGOCD_APP_NAMESPACE" > /tmp/test.txt && echo $ARGUMENTS | xargs helm template --release-name $ARGOCD_APP_NAME  ./ --namespace $ARGOCD_APP_NAMESPACE  > all.yaml && kustomize build']
       - name: kustomized-helm-env-multi-values
         generate:
           command: ["bash", "-c"]
