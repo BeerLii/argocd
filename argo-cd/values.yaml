@@ -190,11 +190,11 @@ configs:
       - name: kustomized-helm-param-multi-values
         generate:
           command: ["bash", "-c"]
-          args: ['ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array | .[] | \"--values=\" + ." ) && echo $ARGUMENTS > /tmp/test.txt && echo $ARGUMENTS | xargs helm template --release-name $ARGOCD_APP_NAME ./  > all.yaml && kustomize build -n $ARGOCD_APP_NAMESPACE']
+          args: ['ARGUMENTS=$(echo "$ARGOCD_APP_PARAMETERS" | jq -r ".[] | select(.name == \"values-files\").array | .[] | \"--values=\" + ." ) && echo $ARGOCD_APP_NAMESPACE > /tmp/test.txt && echo $ARGUMENTS | xargs helm template --release-name $ARGOCD_APP_NAME -n $ARGOCD_APP_NAMESPACE ./  > all.yaml && kustomize build']
       - name: kustomized-helm-env-multi-values
         generate:
           command: ["bash", "-c"]
-          args: ['ARG="" && for f in ${ARGOCD_ENV_VALUESFILE//,/ };do ARG="$ARG--values $f ";done && echo $ARG | xargs helm template --release-name $ARGOCD_APP_NAME ./  > all.yaml && kustomize build -n $ARGOCD_APP_NAMESPACE']
+          args: ['ARG="" && for f in ${ARGOCD_ENV_VALUESFILE//,/ };do ARG="$ARG--values $f ";done && echo $ARG | xargs helm template --release-name $ARGOCD_APP_NAME -n $ARGOCD_APP_NAMESPACE ./  > all.yaml && kustomize build']
       - name: kustomized-helm
         init:
           command: ["/bin/sh", "-c"]
