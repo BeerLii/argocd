@@ -707,7 +707,7 @@ extraObjects: []
 useStaticCredentials: true
 artifactRepository:
   # -- Archive the main container logs as an artifact
-  archiveLogs: false
+  archiveLogs: ture
   # -- Store artifact in a S3-compliant object store
   # @default -- See [values.yaml]
   s3: {}
@@ -730,7 +730,9 @@ artifactRepository:
     #    enableEncryption: true
   # -- Store artifact in a GCS object store
   # @default -- `{}` (See [values.yaml])
-  gcs: {}
+  gcs:
+    bucket: poc-argo
+    keyFormat: "{{ \"{{workflow.namespace}}/{{workflow.name}}/{{pod.name}}\" }}"
   # bucket: <project>-argo
   # keyFormat: "{{ \"{{workflow.namespace}}/{{workflow.name}}/{{pod.name}}\" }}"
   # serviceAccountKeySecret is a secret selector.
