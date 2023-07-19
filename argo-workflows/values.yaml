@@ -732,7 +732,7 @@ artifactRepository:
   # @default -- `{}` (See [values.yaml])
   gcs:
     bucket: poc-argo
-    keyFormat: "{{ \"{{workflow.namespace}}/{{workflow.name}}/{{pod.name}}\" }}"
+    keyFormat: "argowf"
   # bucket: <project>-argo
   # keyFormat: "{{ \"{{workflow.namespace}}/{{workflow.name}}/{{pod.name}}\" }}"
   # serviceAccountKeySecret is a secret selector.
